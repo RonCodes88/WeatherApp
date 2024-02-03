@@ -3,19 +3,37 @@ import { useState } from "react";
 
 const api = {
   key: "4dee4a69b8f2a6628610f505969671fc",
-  base: "https://api.openweathermap.org/data/2.5/",
+  base: "http://api.openweathermap.org/data/2.5/",
+};
+
+let hasError = false;
+const handleFetch = async (search) => {
+  const res = await fetch(
+    `${api.base}weather?q=${search}&units=metric&APPID=${api.key}`
+  );
+
+  if (res.status !== 200) {
+    const error = await res.json();
+    hasError = true;
+    throw { message: error.message, status: error.cod };
+  }
+  hasError = false;
+  const data = await res.json();
+  return data;
 };
 
 function App() {
   const [search, setSearch] = useState("");
   const [weather, setWeather] = useState({});
+  const [error, setError] = useState({ error: false, status: "" });
 
-  const searchPressed = () => {
-    fetch(`${api.base}weather?q=${search}&units=metric&&APPID=${api.key}`)
-      .then((res) => res.json())
-      .then((result) => {
-        setWeather(result);
-      });
+  const searchPressed = async () => {
+    try {
+      let weatherData = await handleFetch(search);
+      setWeather(weatherData);
+    } catch (err) {
+      setError({ error: err.message, status: err.status });
+    }
   };
 
   return (
@@ -32,16 +50,20 @@ function App() {
           />
           <button onClick={searchPressed}>Search</button>
         </div>
-
-        {/* Location */}
-        <p>{weather.name}</p>
-
-        {/* Temperature F/C */}
-        <p>{weather.main.temp} Degrees Celsius</p>
-
-        {/* Weather Condition  */}
-        <p>{weather.weather[0].main}</p>
-        <p>{weather.weather[0].description}</p>
+        {hasError ? <p>Weather Not Found</p> : null}
+        {typeof weather.main !== "undefined" ? (
+          <div>
+            {/* Location */}
+            <p>{weather.name}</p>
+            {/* Temperature in C */}
+            <p>{weather.main.temp} Degrees Celsius</p>
+            {/* Weather Condition  */}
+            <p>{weather.weather[0].main}</p>
+            <p>{weather.weather[0].description}</p>
+          </div>
+        ) : (
+          ""
+        )}
       </header>
     </div>
   );
