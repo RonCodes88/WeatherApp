@@ -6,33 +6,28 @@ const api = {
   base: "http://api.openweathermap.org/data/2.5/",
 };
 
-let hasError = false;
-const handleFetch = async (search) => {
-  const res = await fetch(
-    `${api.base}weather?q=${search}&units=metric&APPID=${api.key}`
-  );
 
-  if (res.status !== 200) {
-    const error = await res.json();
-    hasError = true;
-    throw { message: error.message, status: error.cod };
-  }
-  hasError = false;
-  const data = await res.json();
-  return data;
-};
 
 function App() {
   const [search, setSearch] = useState("");
   const [weather, setWeather] = useState({});
-  const [error, setError] = useState({ error: false, status: "" });
+
+  const [errorOccurred, setErrorOccurred] = useState(false);
 
   const searchPressed = async () => {
     try {
-      let weatherData = await handleFetch(search);
+      setErrorOccurred(false);
+      let url = `${api.base}weather?q=${search}&units=metric&APPID=${api.key}`;
+      const response = await fetch(url);
+      const weatherData = await response.json();
       setWeather(weatherData);
+      if (weatherData.cod !== "404") {
+        setErrorOccurred(false);
+      } else {
+        setErrorOccurred(true);
+      }
     } catch (err) {
-      setError({ error: err.message, status: err.status });
+      setErrorOccurred(true);
     }
   };
 
@@ -50,7 +45,8 @@ function App() {
           />
           <button onClick={searchPressed}>Search</button>
         </div>
-        {hasError ? <p>Weather Not Found</p> : null}
+        
+        {errorOccurred ? <p>Error 404: Weather Not Found</p> : ""}
         {typeof weather.main !== "undefined" ? (
           <div>
             {/* Location */}
